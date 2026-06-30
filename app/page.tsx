@@ -1,63 +1,214 @@
-import Image from "next/image";
+'use client';
+import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+
+type ProductCategory = 'Electronics' | 'Books' | 'Clothing';
+
+type AllCategories = 'all' | ProductCategory;
+
+type Product = {
+  id: string;
+  name: string;
+  category: ProductCategory;
+  price: number;
+  stock: number;
+};
+
+const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: '1',
+    name: 'MacBook Pro',
+    category: 'Electronics',
+    price: 2500,
+    stock: 4,
+  },
+  {
+    id: '2',
+    name: 'Clean Code',
+    category: 'Books',
+    price: 35,
+    stock: 12,
+  },
+  {
+    id: '3',
+    name: 'Nike Hoodie',
+    category: 'Clothing',
+    price: 80,
+    stock: 7,
+  },
+];
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [newProduct, setNewProduct] = useState<Product>({
+    id: uuidv4(),
+    name: '',
+    category: 'Electronics',
+    price: 0,
+    stock: 0,
+  });
+
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<AllCategories>('all');
+  const [sort, setSort] = useState(false);
+  const [favoriteProductIds, setFavoriteProductIds] = useState<string[]>([]);
+
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
+    const { name, value } = e.target;
+
+    setNewProduct((prev) => ({
+      ...prev,
+      [name]: name === 'price' || name === 'stock' ? Number(value) : value,
+    }));
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!newProduct.name) return;
+    if (newProduct.price < 0) return;
+    if (newProduct.stock < 0) return;
+
+    setProducts((prev) => [...prev, newProduct]);
+    setNewProduct({
+      id: uuidv4(),
+      name: '',
+      category: 'Electronics',
+      price: 0,
+      stock: 0,
+    });
+  }
+
+  function handleDelete(id: string) {
+    setProducts(products.filter((prod) => prod.id !== id));
+  }
+
+  function handleEdit(id: string) {
+    const editProduct = products.find((prod) => prod.id === id);
+    if (editProduct) setNewProduct({ ...editProduct });
+  }
+
+  function toggleFavorite(id: string) {
+    setFavoriteProductIds((prev) =>
+      prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id],
+    );
+  }
+
+  const filteredProducts = products
+    .filter((prod) => {
+      const matchingProd = prod.name
+        .toLowerCase()
+        .includes(query.toLowerCase());
+      const matchesCategory =
+        category === 'all' ? true : prod.category === category;
+
+      return matchingProd && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (!sort) return 0;
+
+      return a.name.localeCompare(b.name);
+    });
+
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      <main className="flex flex-1 w-full max-w-5xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        <div>
+          <h3>Find a product by name:</h3>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <h3>Find a product by category:</h3>
+          <input
+            type="text"
+            value={category}
+            onChange={(e) => setCategory(e.target.value as AllCategories)}
+          />
+          <button onClick={() => setSort(!sort)}>Sort by Name</button>
+          <h3>Search by category:</h3>
+          <select
+            name="category"
+            value={newProduct.category}
+            onChange={handleChange}
+          >
+            <option value="all">All Categories</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Books">Books</option>
+            <option value="Clothing">Clothing</option>
+          </select>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        <div>
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="name">Product: </label>
+            <input
+              type="text"
+              name="name"
+              value={newProduct.name}
+              onChange={handleChange}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <label htmlFor="category">Category: </label>
+            <input
+              type="text"
+              name="category"
+              value={newProduct.category}
+              onChange={handleChange}
+            />
+            <label htmlFor="price">Price: </label>
+            <input
+              type="number"
+              name="price"
+              value={newProduct.price}
+              onChange={handleChange}
+            />
+            <label htmlFor="stock">Stock</label>
+            <input
+              type="number"
+              name="stock"
+              value={newProduct.stock}
+              onChange={handleChange}
+            />
+            <button type="submit">Add</button>
+          </form>
+        </div>
+        <div>
+          <ul>
+            <h3>Total Products: {products.length}</h3>
+            {filteredProducts.map((product) => {
+              const isFavorite = favoriteProductIds.includes(product.id);
+              return (
+                <div key={product.id}>
+                  <li className="my-1.5">
+                    Name: {product.name} - Category: {product.category} - $
+                    {product.price} - Stock: {product.stock}{' '}
+                    {product.stock < 5 ? 'Low Stock' : ''} -{' '}
+                    <button
+                      className="border border-red-500 rounded-2xl p-1 mx-1.5"
+                      onClick={() => handleDelete(product.id)}
+                    >
+                      Delete product
+                    </button>
+                    <button
+                      className="border border-blue-500 rounded-2xl p-1 mx-1.5"
+                      onClick={() => handleEdit(product.id)}
+                    >
+                      Edit product
+                    </button>
+                    <button
+                      className="border border-green-500 rounded-2xl p-1 mx-1.5"
+                      onClick={() => toggleFavorite(product.id)}
+                    >
+                      {isFavorite
+                        ? 'Remove from Favorites ❤️'
+                        : 'Add to Favorites 🤍'}
+                    </button>
+                  </li>
+                </div>
+              );
+            })}
+          </ul>
         </div>
       </main>
     </div>
