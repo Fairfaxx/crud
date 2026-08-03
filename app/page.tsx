@@ -160,7 +160,7 @@ export default function Home() {
               type="submit"
               className="border border-y-violet-500 rounded-2xl p-2"
             >
-              Submit
+              Submit Issue
             </button>
           </form>
         </div>
